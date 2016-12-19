@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="http://www.iconarchive.com/favicon-32x32.png">
+
+    <title>Qui fait le support IT ?</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+
+    <style>
+        body {
+            /*background-color: #EEE;*/
+        }
+
+        h1 {
+            font-size: 500%;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        h2 {
+            font-size: 200%;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .user-picture {
+            text-align: center;
+        }
+
+        .date {
+            text-transform: capitalize;
+        }
+
+        .user {
+            font-weight: bold;
+        }
+
+        td {
+            padding: 5px 20px;
+        }
+
+        .well {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+
+<body ng-app="support">
+    <div class="container" ng-controller="SupportController as vm">
+        <h2>Qui fait le support IT aujourd'hui ?</h2>
+
+        <h1><%= user.name %></h1>
+
+        <div align="center">
+            <img src="<%= userPicture %>" />
+        </div>
+
+        <div class="well" align="center">
+            <h4>Les prochains jours, ce sera :</h4>
+
+            <table>
+                <% for (var i = 0; i < nextDays.length; i++) {%>
+                    <tr>
+                        <td class="date">
+                          <i class="fa fa-calendar"></i>
+                          <%= nextDays[i].date.format('dddd LL') %></td>
+                        <td class="user"><%= nextDays[i].user.name %></td>
+                        <% if (admin) { %>
+                            <td>
+                                <% if (i != nextDays.length - 1) { %>
+                                    <a href="#" ng-click="vm.upDown('down', <%= nextDays[i].order %>)"><i class="fa fa-caret-down fa-2x"></i></a>
+                                <% } %>
+                                <a href="#" ng-click="vm.upDown('up', <%= nextDays[i].order %>)"><i class="fa fa-caret-up fa-2x"></i></a>
+                            </td>
+                        <% } %>
+                    </tr>
+                <% } %>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    <script src="../app.js"></script>
+</body>
+</html>
