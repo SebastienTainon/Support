@@ -73,6 +73,9 @@ app.get('/', function (req, res) {
         while (contentData.date != currentDate.format('L')) {
             do {
                 currentDate = moment(currentDate).subtract(1, 'days');
+                if (contentData.date == currentDate.format('L')) {
+                    break;
+                }
             }
             while (currentDate.day() == 0 || currentDate.day() > 5);
             // console.log(contentData.date, currentDate.format('L'));
