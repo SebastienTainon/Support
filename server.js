@@ -129,6 +129,6 @@ app.get('/app.js', function (req, res) {
     res.sendFile('/app.js', {root: __dirname});
 });
 
-app.listen(9600, function () {
-    console.log('Server listening on http://localhost:9600');
+app.listen(9601, function () {
+    console.log('Server listening on http://localhost:9601');
 });
