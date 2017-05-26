@@ -10,26 +10,32 @@ var _ = require('lodash');
 var app = express();
 var fileSave = 'data.json';
 
-var listPeople = config.listPeople;
-var slackToken = config.slackToken;
+var content, contentData, supportOrder, listPeople;
 
 app.use(bodyParser.json());
 moment.locale('fr');
 
-var content = fs.existsSync(fileSave) ? fs.readFileSync(fileSave) : null;
-var contentData = content ? JSON.parse(content) : {};
-var supportOrder = contentData.order;
-var slackUsers = {};
-
 var writeNewOrder = function (newOrder) {
     supportOrder = newOrder;
     contentData.date = moment().format('L');
-    fs.writeFile(fileSave, JSON.stringify({date: moment().format('L'), order: newOrder}));
+    fs.writeFile(fileSave, JSON.stringify({date: moment().format('L'), order: newOrder, people: listPeople}));
 };
 
+if (fs.existsSync(fileSave)) {
+    content = fs.existsSync(fileSave) ? fs.readFileSync(fileSave) : null;
+    contentData = content ? JSON.parse(content) : {};
+    supportOrder = contentData.order;
+    listPeople = contentData.people;
+} else {
+    contentData = {};
+    listPeople = [];
+    writeNewOrder([]);
+}
+
+var slackUsers = {};
 request
-    .get('https://slack.com/api/users.list?token=' + slackToken, function (error, response, body) {
-        if (response.statusCode == 200) {
+    .get('https://slack.com/api/users.list?token=' + config.slackToken, function (error, response, body) {
+        if (response.statusCode === 200) {
             var members = JSON.parse(body).members;
             _.each(members, function (member) {
                 slackUsers[member.id] = member;
@@ -38,32 +44,58 @@ request
     });
 
 var returnIndex = function (req, res, admin) {
+    if (supportOrder.length > 0) {
+        var user = listPeople[supportOrder[0]];
+
+        var nextDays = [];
+        var currentDate = moment();
+        _.each(supportOrder, function (supportOrder, i) {
+            if (i >= 1) {
+                do {
+                    currentDate = moment(currentDate).add(1, 'days');
+                }
+                while (currentDate.day() === 0 || currentDate.day() > 5);
+
+                nextDays.push({
+                    date: currentDate,
+                    user: listPeople[supportOrder],
+                    order: supportOrder
+                });
+            }
+        });
+
+        res.render('index.ejs', {
+            user: user,
+            userPicture: slackUsers[user.slackId].profile.image_192,
+            nextDays: nextDays,
+            admin: admin,
+            slackUsers: slackUsers
+        });
+    } else {
+        res.render('index.ejs', {
+            nextDays: [],
+            admin: admin,
+            slackUsers: slackUsers
+        });
+    }
+};
+
+var postWhoDoesSupport = function () {
     var user = listPeople[supportOrder[0]];
 
-    var nextDays = [];
-    var currentDate = moment();
-    _.each(supportOrder, function (supportOrder, i) {
-        if (i >= 1) {
-            do {
-                currentDate = moment(currentDate).add(1, 'days');
-            }
-            while (currentDate.day() == 0 || currentDate.day() > 5);
+    var data = {
+        token: config.slackToken,
+        channel: config.channelId,
+        text: "C'est *@" + user.name + "* qui fait le support aujourd'hui !"
+    };
 
-            nextDays.push({
-                date: currentDate,
-                user: listPeople[supportOrder],
-                order: supportOrder
-            });
-        }
-    });
-
-    res.render('index.ejs', {
-        user: user,
-        userPicture: slackUsers[user.slackId].profile.image_192,
-        nextDays: nextDays,
-        admin: admin
-    });
+    request
+        .post('https://slack.com/api/chat.postMessage', {form: data}, function (error, response, body) {
+            console.log(body);
+        });
 };
+
+postWhoDoesSupport();
 
 app.get('/', function (req, res) {
     var currentDate = moment();
@@ -91,6 +123,7 @@ app.get('/', function (req, res) {
         }
 
         writeNewOrder(newOrder);
+        postWhoDoesSupport();
     }
 
     return returnIndex(req, res, false);
@@ -125,10 +158,58 @@ app.post('/up-down', function (req, res) {
     }
 });
 
+app.post('/add-user', function (req, res) {
+    var newUserId = req.body.id;
+    var userName = slackUsers[newUserId]['name'];
+
+    listPeople.push({
+        name: userName.charAt(0).toUpperCase() + userName.slice(1),
+        slackId: newUserId
+    });
+
+    supportOrder.push(listPeople.length - 1);
+
+    writeNewOrder(supportOrder);
+
+    return returnIndex(req, res, true);
+});
+
+app.post('/remove-user', function (req, res) {
+    var userId = req.body.id;
+
+    var userIndex = _.findIndex(listPeople, function (user) {
+        return user.slackId === userId;
+    });
+
+    if (userIndex !== -1) {
+        listPeople.splice(userIndex, 1);
+
+        var indexOrder = null;
+        supportOrder = _.map(supportOrder, function (order, key) {
+            if (order > userIndex) {
+                return order - 1;
+            } else {
+                if (order === userIndex) {
+                    indexOrder = key;
+                }
+                return order;
+            }
+        });
+
+        if (null !== indexOrder) {
+            supportOrder.splice(indexOrder, 1);
+        }
+
+        writeNewOrder(supportOrder);
+    }
+
+    return returnIndex(req, res, true);
+});
+
 app.get('/app.js', function (req, res) {
     res.sendFile('/app.js', {root: __dirname});
 });
 
-app.listen(9601, function () {
-    console.log('Server listening on http://localhost:9601');
+app.listen(config.port, function () {
+    console.log('Server listening on http://localhost:' + config.port);
 });

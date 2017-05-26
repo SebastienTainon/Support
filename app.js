@@ -1,10 +1,9 @@
 var app = angular.module('support', []);
 
-app.controller('SupportController', function($http, $scope, $timeout) {
+app.controller('SupportController', function ($http) {
     var vm = this;
 
     vm.upDown = function (direction, order) {
-        console.log(direction, order);
         vm.request('/up-down', {
             direction: direction,
             order: order
@@ -13,14 +12,36 @@ app.controller('SupportController', function($http, $scope, $timeout) {
         });
     };
 
-    vm.request = function(url, data, success) {
+    vm.request = function (url, data, success) {
         $http.post(url, data, {
             headers: {'Content-Type': 'application/json'},
             timeout: 2000
         })
-            .then(success, function errorCallback() {
-                bootbox.alert("La requête n'a pas pu être effectuée.");
-            });
+            .then(success, vm.errorCallback);
+    };
+
+    vm.addUser = function () {
+        $http.post('/add-user', {id: vm.newUserId}, {
+            headers: {'Content-Type': 'application/json'},
+            timeout: 2000
+        })
+            .then(function () {
+                document.location.reload();
+            }, vm.errorCallback);
+    };
+
+    vm.removeUser = function (userId) {
+        $http.post('/remove-user', {id: userId}, {
+            headers: {'Content-Type': 'application/json'},
+            timeout: 2000
+        })
+            .then(function () {
+                document.location.reload();
+            }, vm.errorCallback);
+    };
+
+    vm.errorCallback = function () {
+        bootbox.alert("La requête n'a pas pu être effectuée.");
     };
 });
 

@@ -5,12 +5,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="http://www.iconarchive.com/favicon-32x32.png">
-    <meta property="og:title" content="Qui fait le support IT aujourd'hui ?" />
+    <meta property="og:title" content="Qui fait le support aujourd'hui ?" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="http://quifaitlesupportaujourdhui.yoopies.fr" />
     <meta property="og:image" content="http://www.iconarchive.com/favicon-32x32.png" />
 
-    <title>Qui fait le support IT ?</title>
+    <title>Qui fait le support ?</title>
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
@@ -64,12 +64,12 @@
 
 <body ng-app="support">
     <div class="container" ng-controller="SupportController as vm">
-        <h2>Qui fait le support IT aujourd'hui ?</h2>
+        <h2>Qui fait le support aujourd'hui ?</h2>
 
-        <h1><%= user.name %></h1>
+        <h1><%= typeof user !== 'undefined' ? user.name : 'Personne !' %></h1>
 
         <div align="center">
-            <img src="<%= userPicture %>" />
+            <img src="<%= typeof userPicture !== 'undefined' ? userPicture : '' %>" />
         </div>
 
         <div class="well" align="center">
@@ -81,7 +81,9 @@
                         <td class="date">
                           <i class="fa fa-calendar"></i>
                           <%= nextDays[i].date.format('dddd LL') %></td>
-                        <td class="user"><%= nextDays[i].user.name %></td>
+                        <td class="user"><%= nextDays[i].user.name %>
+                            <a href="#" ng-click="vm.removeUser('<%= nextDays[i].user.slackId %>')"><i class="fa fa-remove"></i></a>
+                        </td>
                         <% if (admin) { %>
                             <td>
                                 <% if (i != nextDays.length - 1) { %>
@@ -94,6 +96,23 @@
                 <% } %>
             </table>
         </div>
+
+        <% if (admin) { %>
+            <div align="center">
+                <h3>Ajouter un utilisateur :</h3>
+
+                <form method="post" ng-submit="vm.addUser()">
+                    <select ng-model="vm.newUserId" class="form-control" style="width: 200px">
+                        <% for (var userId in slackUsers) { %>
+                            <option value="<%= userId %>"><%= slackUsers[userId].name %></option>
+                        <% } %>
+                    </select>
+
+                    <br>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </form>
+            </div>
+        <% } %>
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
