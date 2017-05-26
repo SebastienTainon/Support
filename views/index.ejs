@@ -82,7 +82,9 @@
                           <i class="fa fa-calendar"></i>
                           <%= nextDays[i].date.format('dddd LL') %></td>
                         <td class="user"><%= nextDays[i].user.name %>
-                            <a href="#" ng-click="vm.removeUser('<%= nextDays[i].user.slackId %>')"><i class="fa fa-remove"></i></a>
+                            <% if (admin) { %>
+                                <a href="#" ng-click="vm.removeUser('<%= nextDays[i].user.slackId %>')"><i class="fa fa-remove"></i></a>
+                            <% } %>
                         </td>
                         <% if (admin) { %>
                             <td>
