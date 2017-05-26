@@ -81,21 +81,21 @@ var returnIndex = function (req, res, admin) {
 };
 
 var postWhoDoesSupport = function () {
-    var user = listPeople[supportOrder[0]];
+    if (supportOrder.length > 0) {
+        var user = listPeople[supportOrder[0]];
 
-    var data = {
-        token: config.slackToken,
-        channel: config.channelId,
-        text: "C'est *@" + user.name + "* qui fait le support aujourd'hui !"
-    };
+        var data = {
+            token: config.slackToken,
+            channel: config.channelId,
+            text: "C'est *@" + user.name + "* qui fait le support aujourd'hui !"
+        };
 
-    request
-        .post('https://slack.com/api/chat.postMessage', {form: data}, function (error, response, body) {
-            console.log(body);
-        });
+        request
+            .post('https://slack.com/api/chat.postMessage', {form: data}, function (error, response, body) {
+                console.log(body);
+            });
+    }
 };
-
-postWhoDoesSupport();
 
 app.get('/', function (req, res) {
     var currentDate = moment();
