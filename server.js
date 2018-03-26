@@ -10,7 +10,7 @@ var _ = require('lodash');
 var app = express();
 var fileSave = 'data.json';
 
-var content, contentData, supportOrder, listPeople;
+var content, contentData, supportOrder, listPeople, lastNotifDate = null;
 
 app.use(bodyParser.json());
 moment.locale('fr');
@@ -18,7 +18,12 @@ moment.locale('fr');
 var writeNewOrder = function (newOrder) {
     supportOrder = newOrder;
     contentData.date = moment().format('L');
-    fs.writeFile(fileSave, JSON.stringify({date: moment().format('L'), order: newOrder, people: listPeople}));
+    fs.writeFileSync(fileSave, JSON.stringify({
+        date: moment().format('L'),
+        order: newOrder,
+        people: listPeople,
+        lastNotifDate: lastNotifDate,
+    }));
 };
 
 if (fs.existsSync(fileSave)) {
@@ -26,9 +31,12 @@ if (fs.existsSync(fileSave)) {
     contentData = content ? JSON.parse(content) : {};
     supportOrder = contentData.order;
     listPeople = contentData.people;
+    lastNotifDate = contentData.lastNotifDate;
+
 } else {
     contentData = {};
     listPeople = [];
+    lastNotifDate = null;
     writeNewOrder([]);
 }
 
@@ -39,6 +47,19 @@ request
             var members = JSON.parse(body).members;
             _.each(members, function (member) {
                 slackUsers[member.id] = member;
+            });
+        }
+    });
+
+var slackChannels = {};
+request
+    .get('https://slack.com/api/channels.list?token=' + config.slackToken, function (error, response, body) {
+        if (response.statusCode === 200) {
+            var channels = JSON.parse(body).channels;
+            _.each(channels, function (channel) {
+                if (channel.is_channel && !channel.is_archived) {
+                    slackChannels['#' + channel.name] = channel.id;
+                }
             });
         }
     });
@@ -81,18 +102,25 @@ var returnIndex = function (req, res, admin) {
 };
 
 var postWhoDoesSupport = function () {
-    if (supportOrder.length > 0) {
+    if (supportOrder.length > 0 && lastNotifDate !== moment().format('L')) {
         var user = listPeople[supportOrder[0]];
+
+        if (!(config.slackChannel in slackChannels)) {
+            console.error('Unlisted channel: ' + config.slackChannel);
+            return;
+        }
 
         var data = {
             token: config.slackToken,
-            channel: config.channelId,
+            channel: slackChannels[config.slackChannel],
             text: "C'est *@" + user.name + "* qui fait le support aujourd'hui !"
         };
 
         request
             .post('https://slack.com/api/chat.postMessage', {form: data}, function (error, response, body) {
                 console.log(body);
+                lastNotifDate = moment().format('L');
+                writeNewOrder(supportOrder);
             });
     }
 };
@@ -123,8 +151,9 @@ app.get('/', function (req, res) {
         }
 
         writeNewOrder(newOrder);
-        postWhoDoesSupport();
     }
+
+    postWhoDoesSupport();
 
     return returnIndex(req, res, false);
 });
