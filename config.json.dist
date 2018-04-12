@@ -1,0 +1,5 @@
+{
+  "port": 9601,
+  "slackToken": "xoxp-****",
+  "slackChannel": "#test"
+}
